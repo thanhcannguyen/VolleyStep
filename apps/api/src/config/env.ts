@@ -8,12 +8,32 @@ dotenv.config({
     path: path.resolve(__dirname, "../../.env"),
 });
 
+const mongoUriSchema = z
+    .string()
+    .min(1, "MONGODB_URI is required")
+    .refine(
+        (value) =>
+            value.startsWith("mongodb://") ||
+            value.startsWith("mongodb+srv://"),
+        {
+            message:
+                "MONGODB_URI must start with mongodb:// or mongodb+srv://",
+        },
+    );
+
 const envSchema = z.object({
     NODE_ENV: z
         .enum(["development", "test", "production"])
         .default("development"),
 
-    PORT: z.coerce.number().int().positive().max(65535).default(5000),
+    PORT: z.coerce
+        .number()
+        .int()
+        .positive()
+        .max(65535)
+        .default(5000),
+
+    MONGODB_URI: mongoUriSchema,
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
