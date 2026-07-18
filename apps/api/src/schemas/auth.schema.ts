@@ -1,6 +1,7 @@
 
 import { z } from "zod";
 
+// 1. Định nghĩa Schema cho Password (Dùng chung cho Register)
 const passwordSchema = z
     .string()
     .min(8, "Password must contain at least 8 characters")
@@ -19,6 +20,7 @@ const passwordSchema = z
         "Password must contain at least one special character",
     );
 
+// 2. Schema cho luồng Đăng ký (Register)
 export const registerSchema = z
     .object({
         body: z
@@ -40,7 +42,7 @@ export const registerSchema = z
 
                 passwordConfirmation: z.string(),
             })
-            .strict(),
+            .strict(), // Đã bỏ chuỗi bên trong để tránh lỗi TS2554
     })
     .refine(
         ({ body }) =>
@@ -51,6 +53,51 @@ export const registerSchema = z
         },
     );
 
+// 3. Schema cho luồng Đăng nhập (Login)
+export const loginSchema = z.object({
+    body: z
+        .object({
+            email: z
+                .string()
+                .trim()
+                .toLowerCase()
+                .email("Email must be valid")
+                .max(254, "Email must contain at most 254 characters"),
+
+            password: z
+                .string()
+                .min(1, "Password is required"),
+        })
+        .strict(), // Đã xóa chuỗi tin nhắn để đồng bộ strict mode
+});
+
+// 4. Schema cho luồng Làm mới Token (Refresh Token)
+export const refreshTokenSchema = z.object({
+    body: z
+        .object({
+            refreshToken: z
+                .string()
+                .min(1, "Refresh token is required"),
+        })
+        .strict(), // Đã xóa chuỗi tin nhắn để đồng bộ strict mode
+});
+
+// 5. Schema cho luồng Đăng xuất (Logout)
+export const logoutSchema = refreshTokenSchema;
+
+// --- EXPORT TYPES ---
 export type RegisterInput = z.infer<
     typeof registerSchema
+>["body"];
+
+export type LoginInput = z.infer<
+    typeof loginSchema
+>["body"];
+
+export type RefreshTokenInput = z.infer<
+    typeof refreshTokenSchema
+>["body"];
+
+export type LogoutInput = z.infer<
+    typeof logoutSchema
 >["body"];

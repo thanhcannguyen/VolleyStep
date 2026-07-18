@@ -34,6 +34,26 @@ const envSchema = z.object({
         .default(5000),
 
     MONGODB_URI: mongoUriSchema,
+
+    JWT_ACCESS_SECRET: z
+        .string()
+        .min(32, "JWT_ACCESS_SECRET must contain at least 32 characters"),
+
+    JWT_REFRESH_SECRET: z
+        .string()
+        .min(32, "JWT_REFRESH_SECRET must contain at least 32 characters"),
+
+    ACCESS_TOKEN_TTL_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(900),
+
+    REFRESH_TOKEN_TTL_SECONDS: z.coerce
+        .number()
+        .int()
+        .positive()
+        .default(604800),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);
