@@ -1,0 +1,16 @@
+{
+    "name": "volleystep",
+    "version": "1.0.0",
+    "private": true,
+    "description": "A fullstack ecommerce platform for volleyball shoes",
+    "scripts": {
+        "dev:api": "pnpm --filter @volleystep/api dev",
+        "build:api": "pnpm --filter @volleystep/api build",
+        "start:api": "pnpm --filter @volleystep/api start",
+        "typecheck": "pnpm --filter @volleystep/api typecheck"
+    },
+    "packageManager": "pnpm@11.13.1",
+    "engines": {
+        "node": ">=20"
+    }
+}
