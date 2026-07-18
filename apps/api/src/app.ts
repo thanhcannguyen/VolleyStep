@@ -1,6 +1,9 @@
 
 import express from "express";
 
+import { errorHandler } from "./middlewares/error-handler.middleware";
+import { notFoundHandler } from "./middlewares/not-found.middleware";
+
 export const app = express();
 
 app.use(express.json());
@@ -11,3 +14,7 @@ app.get("/api/health", (_request, response) => {
         message: "VolleyStep API is running",
     });
 });
+
+app.use(notFoundHandler);
+
+app.use(errorHandler);
