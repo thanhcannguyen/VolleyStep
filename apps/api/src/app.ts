@@ -5,8 +5,9 @@ import { errorHandler } from "./middlewares/error-handler.middleware";
 import { notFoundHandler } from "./middlewares/not-found.middleware";
 import { authRouter } from "./routes/auth.route";
 import { adminBrandRouter, brandRouter } from "./routes/brand.route";
-import { adminCategoryRouter, categoryRouter } from "./routes/category.route";
 import { cartRouter } from "./routes/cart.route";
+import { adminCategoryRouter, categoryRouter } from "./routes/category.route";
+import { orderRouter } from "./routes/order.route";
 import {
     adminProductRouter,
     productRouter,
@@ -29,6 +30,7 @@ app.use("/api/brands", brandRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
+app.use("/api/orders", orderRouter);
 
 app.use("/api/admin/brands", adminBrandRouter);
 app.use("/api/admin/categories", adminCategoryRouter);
