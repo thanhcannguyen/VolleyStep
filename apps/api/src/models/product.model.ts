@@ -155,6 +155,6 @@ productSchema.index(
     { isActive: 1, brandId: 1, categoryId: 1 },
     { name: "product_catalog_filters" },
 );
-productSchema.index({ name: 1 }, { name: "product_name" });
+productSchema.index({ name: "text", description: "text", "variants.sku": "text", }, { name: "product_text_search", weights: { name: 10, "variants.sku": 8, description: 2, }, default_language: "none", },);
 
 export const ProductModel = model<Product, ProductModel>("Product", productSchema);

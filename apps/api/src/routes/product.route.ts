@@ -7,6 +7,8 @@ import {
     deleteProductHandler,
     deleteProductVariantHandler,
     getAdminProductHandler,
+    getProductBySlugHandler,
+    listProductsHandler,
     updateProductHandler,
     updateProductVariantHandler,
 } from "../controllers/product.controller";
@@ -18,9 +20,33 @@ import {
     createProductVariantSchema,
     deleteProductVariantSchema,
     productIdParamSchema,
+    productListQuerySchema,
+    publicProductSlugSchema,
     updateProductSchema,
     updateProductVariantSchema,
 } from "../schemas/product.schema";
+
+// ==========================================
+// PUBLIC PRODUCT ROUTER (BƯỚC 12)
+// ==========================================
+
+export const productRouter = Router();
+
+productRouter.get(
+    "/",
+    validate(productListQuerySchema),
+    listProductsHandler,
+);
+
+productRouter.get(
+    "/:slug",
+    validate(publicProductSlugSchema),
+    getProductBySlugHandler,
+);
+
+// ==========================================
+// ADMIN PRODUCT ROUTER
+// ==========================================
 
 export const adminProductRouter = Router();
 

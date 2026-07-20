@@ -46,7 +46,10 @@ const stockSchema = z
     .int("Variant stock must be an integer")
     .nonnegative("Variant stock must be greater than or equal to 0");
 
-const imageSchema = z.string().trim().url("Variant image must be a valid URL");
+const imageSchema = z
+    .string()
+    .trim()
+    .url("Variant image must be a valid URL");
 
 const createVariantBodySchema = z
     .object({
@@ -105,6 +108,7 @@ export const createProductSchema = z.object({
                     });
                     return;
                 }
+
                 skuSet.add(variant.sku);
             });
         }),
@@ -156,7 +160,138 @@ export const deleteProductVariantSchema = z.object({
     }),
 });
 
-export type CreateProductInput = z.infer<typeof createProductSchema>["body"];
-export type UpdateProductInput = z.infer<typeof updateProductSchema>["body"];
-export type CreateProductVariantInput = z.infer<typeof createProductVariantSchema>["body"];
-export type UpdateProductVariantInput = z.infer<typeof updateProductVariantSchema>["body"];
+/* ===========================
+   Phase 9 - Public Product API
+=========================== */
+
+const positiveIntegerQuerySchema = z
+    .string()
+    .regex(
+        /^[1-9]\d*$/,
+        "Value must be a positive integer",
+    );
+
+const nonNegativeIntegerQuerySchema = z
+    .string()
+    .regex(
+        /^\d+$/,
+        "Value must be a non-negative integer",
+    );
+
+const productFilterTextSchema = z
+    .string()
+    .trim()
+    .min(1, "Filter value must not be empty")
+    .max(
+        100,
+        "Filter value must contain at most 100 characters",
+    );
+
+export const productListQuerySchema = z
+    .object({
+        query: z
+            .object({
+                page: positiveIntegerQuerySchema.optional(),
+
+                limit: positiveIntegerQuerySchema
+                    .refine(
+                        (value) => Number(value) <= 100,
+                        {
+                            message:
+                                "Limit must be less than or equal to 100",
+                        },
+                    )
+                    .optional(),
+
+                search: z
+                    .string()
+                    .trim()
+                    .min(
+                        2,
+                        "Search must contain at least 2 characters",
+                    )
+                    .max(
+                        100,
+                        "Search must contain at most 100 characters",
+                    )
+                    .optional(),
+
+                brand:
+                    productFilterTextSchema.optional(),
+
+                category:
+                    productFilterTextSchema.optional(),
+
+                color:
+                    productFilterTextSchema.optional(),
+
+                size:
+                    productFilterTextSchema.optional(),
+
+                minPrice:
+                    nonNegativeIntegerQuerySchema.optional(),
+
+                maxPrice:
+                    nonNegativeIntegerQuerySchema.optional(),
+
+                sort: z
+                    .enum([
+                        "newest",
+                        "oldest",
+                        "price_asc",
+                        "price_desc",
+                        "name_asc",
+                        "name_desc",
+                        "relevance",
+                    ])
+                    .optional(),
+            })
+            .strict(),
+    })
+    .superRefine((input, context) => {
+        if (
+            input.query.minPrice !== undefined &&
+            input.query.maxPrice !== undefined &&
+            Number(input.query.minPrice) >
+            Number(input.query.maxPrice)
+        ) {
+            context.addIssue({
+                code: "custom",
+                path: ["query", "maxPrice"],
+                message:
+                    "Maximum price must be greater than or equal to minimum price",
+            });
+        }
+    });
+
+export const publicProductSlugSchema = z.object({
+    params: z.object({
+        slug: z
+            .string()
+            .trim()
+            .min(1, "Product slug is required")
+            .max(
+                200,
+                "Product slug must contain at most 200 characters",
+            )
+            .regex(
+                /^[a-z0-9]+(?:-[a-z0-9]+)*$/,
+                "Product slug is invalid",
+            ),
+    }),
+});
+
+export type CreateProductInput =
+    z.infer<typeof createProductSchema>["body"];
+
+export type UpdateProductInput =
+    z.infer<typeof updateProductSchema>["body"];
+
+export type CreateProductVariantInput =
+    z.infer<typeof createProductVariantSchema>["body"];
+
+export type UpdateProductVariantInput =
+    z.infer<typeof updateProductVariantSchema>["body"];
+
+export type ProductListQuery =
+    z.infer<typeof productListQuerySchema>["query"];

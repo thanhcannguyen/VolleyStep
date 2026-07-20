@@ -4,6 +4,7 @@ import type { RequestHandler } from "express";
 import type {
     CreateProductInput,
     CreateProductVariantInput,
+    ProductListQuery,
     UpdateProductInput,
     UpdateProductVariantInput,
 } from "../schemas/product.schema";
@@ -13,6 +14,8 @@ import {
     deactivateProduct,
     deleteProductVariant,
     getAdminProductById,
+    getPublicProductBySlug,
+    listPublicProducts,
     updateProduct,
     updateProductVariant,
 } from "../services/product.service";
@@ -26,6 +29,10 @@ type ProductVariantParams = {
     productId: string;
     variantId: string;
 } & Record<string, string>;
+
+interface PublicProductSlugParams extends Record<string, string> {
+    slug: string;
+}
 
 const mapVariantResponse = (variant: {
     _id: { toString(): string };
@@ -115,6 +122,43 @@ const mapProductResponse = (product: {
         updatedAt: product.updatedAt,
     };
 };
+
+// ==========================================
+// PUBLIC PRODUCT CONTROLLERS (BƯỚC 11)
+// ==========================================
+
+export const listProductsHandler: RequestHandler<
+    Record<string, string>,
+    unknown,
+    unknown,
+    ProductListQuery
+> = async (request, response) => {
+    const result = await listPublicProducts(request.query);
+
+    response.status(200).json({
+        success: true,
+        message: "Products retrieved successfully",
+        data: result,
+    });
+};
+
+export const getProductBySlugHandler: RequestHandler<
+    PublicProductSlugParams
+> = async (request, response) => {
+    const product = await getPublicProductBySlug(request.params.slug);
+
+    response.status(200).json({
+        success: true,
+        message: "Product retrieved successfully",
+        data: {
+            product,
+        },
+    });
+};
+
+// ==========================================
+// ADMIN PRODUCT CONTROLLERS
+// ==========================================
 
 export const createProductHandler: RequestHandler<
     Record<string, string>,

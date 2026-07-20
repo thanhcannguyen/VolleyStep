@@ -6,7 +6,10 @@ import { notFoundHandler } from "./middlewares/not-found.middleware";
 import { authRouter } from "./routes/auth.route";
 import { adminBrandRouter, brandRouter } from "./routes/brand.route";
 import { adminCategoryRouter, categoryRouter } from "./routes/category.route";
-import { adminProductRouter } from "./routes/product.route";
+import {
+    adminProductRouter,
+    productRouter,
+} from "./routes/product.route";
 
 export const app = express();
 
@@ -23,6 +26,7 @@ app.use("/api/auth", authRouter);
 
 app.use("/api/brands", brandRouter);
 app.use("/api/categories", categoryRouter);
+app.use("/api/products", productRouter);
 
 app.use("/api/admin/brands", adminBrandRouter);
 app.use("/api/admin/categories", adminCategoryRouter);

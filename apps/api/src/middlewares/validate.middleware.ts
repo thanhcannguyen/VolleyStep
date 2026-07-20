@@ -32,7 +32,8 @@ export const validate = (
 
         if (!result.success) {
             const errors = result.error.issues.map((issue) => ({
-                field: issue.path.join(".").replace(/^body\./, ""),
+                // Bỏ tiền tố body., params., query. để field trả về đẹp mắt (ví dụ: 'page' thay vì 'query.page')
+                field: issue.path.join(".").replace(/^(body|params|query)\./, ""),
                 message: issue.message,
             }));
 
@@ -40,12 +41,21 @@ export const validate = (
             return;
         }
 
-        if (
-            typeof result.data === "object" &&
-            result.data !== null &&
-            "body" in result.data
-        ) {
-            request.body = result.data.body;
+        // Cập nhật dữ liệu đã qua Zod transform/coercion ngược lại vào Express Request
+        if (typeof result.data === "object" && result.data !== null) {
+            const parsedData = result.data as Record<string, unknown>;
+
+            if ("body" in parsedData) {
+                request.body = parsedData.body;
+            }
+
+            if ("query" in parsedData) {
+                request.query = parsedData.query as typeof request.query;
+            }
+
+            if ("params" in parsedData) {
+                request.params = parsedData.params as typeof request.params;
+            }
         }
 
         next();
