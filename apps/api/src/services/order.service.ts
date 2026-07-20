@@ -5,17 +5,24 @@ import { CartModel } from "../models/cart.model";
 import { CategoryModel } from "../models/category.model";
 import {
     OrderModel,
+    ORDER_STATUSES,
     type OrderDocument,
     type OrderItemSnapshot,
+    type OrderStatus,
 } from "../models/order.model";
 import {
     ProductModel,
     type Product,
     type ProductVariant,
 } from "../models/product.model";
-import type { CheckoutInput } from "../schemas/order.schema";
+import type {
+    AdminOrderListQuery,
+    CheckoutInput,
+    OrderListQuery,
+} from "../schemas/order.schema";
 import { AppError } from "../utils/app-error";
 import { isDuplicateKeyError } from "../utils/duplicate-key";
+import { isValidOrderStatusTransition } from "../utils/order-status";
 
 interface ProductWithVariant {
     product: Product & { _id: Types.ObjectId };
@@ -55,6 +62,28 @@ export interface CheckoutOrderResponse {
     createdAt: Date;
 }
 
+export interface OrderSummary {
+    id: string;
+    orderNumber: string;
+    status: string;
+    itemCount: number;
+    total: number;
+    createdAt: Date;
+}
+
+export interface OrderListResult {
+    orders: OrderSummary[];
+    pagination: {
+        page: number;
+        limit: number;
+        totalItems: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
+}
+
+// --- Helpers ---
 const generateOrderNumber = (): string => {
     const date = new Date();
     const datePart = [
@@ -110,9 +139,48 @@ const mapOrderResponse = (order: OrderDocument): CheckoutOrderResponse => ({
     createdAt: order.createdAt,
 });
 
+const mapOrderSummaryResponse = (order: OrderDocument): OrderSummary => ({
+    id: order._id.toString(),
+    orderNumber: order.orderNumber,
+    status: order.status,
+    itemCount: order.items.length,
+    total: order.total,
+    createdAt: order.createdAt,
+});
+
+const paginateOrders = async (
+    filter: Record<string, unknown>,
+    page: number,
+    limit: number
+): Promise<OrderListResult> => {
+    const skip = (page - 1) * limit;
+
+    const [orders, totalItems] = await Promise.all([
+        OrderModel.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit),
+        OrderModel.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / limit);
+
+    return {
+        orders: orders.map(mapOrderSummaryResponse),
+        pagination: {
+            page,
+            limit,
+            totalItems,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: totalPages > 0 && page > 1,
+        },
+    };
+};
+
 const assertCatalogReferencesAreActive = async (
     products: Array<Product & { _id: Types.ObjectId }>,
-    session: ClientSession,
+    session: ClientSession
 ): Promise<void> => {
     const brandIds = [
         ...new Set(products.map((product) => product.brandId.toString())),
@@ -148,13 +216,13 @@ const buildOrderItems = (
         variantId: Types.ObjectId;
         quantity: number;
     }>,
-    products: Array<Product & { _id: Types.ObjectId }>,
+    products: Array<Product & { _id: Types.ObjectId }>
 ): {
     snapshots: OrderItemSnapshot[];
     productVariants: ProductWithVariant[];
 } => {
     const productMap = new Map(
-        products.map((product) => [product._id.toString(), product]),
+        products.map((product) => [product._id.toString(), product])
     );
 
     const snapshots: OrderItemSnapshot[] = [];
@@ -168,7 +236,7 @@ const buildOrderItems = (
         }
 
         const variant = product.variants.find((candidate) =>
-            candidate._id.equals(cartItem.variantId),
+            candidate._id.equals(cartItem.variantId)
         );
 
         if (!variant) {
@@ -176,10 +244,7 @@ const buildOrderItems = (
         }
 
         if (variant.stock < cartItem.quantity) {
-            throw new AppError(
-                `Insufficient stock for SKU ${variant.sku}`,
-                409,
-            );
+            throw new AppError(`Insufficient stock for SKU ${variant.sku}`, 409);
         }
 
         const lineTotal = variant.price * cartItem.quantity;
@@ -207,7 +272,7 @@ const buildOrderItems = (
 
 const decrementStockAtomically = async (
     items: OrderItemSnapshot[],
-    session: ClientSession,
+    session: ClientSession
 ): Promise<void> => {
     for (const item of items) {
         const result = await ProductModel.updateOne(
@@ -236,21 +301,22 @@ const decrementStockAtomically = async (
                     },
                 ],
                 session,
-            },
+            }
         );
 
         if (result.modifiedCount !== 1) {
             throw new AppError(
                 `Stock changed during checkout for SKU ${item.sku}`,
-                409,
+                409
             );
         }
     }
 };
 
+// --- Checkout Service (Phase 11) ---
 export const checkoutCart = async (
     userId: string,
-    input: CheckoutInput,
+    input: CheckoutInput
 ): Promise<CheckoutOrderResponse> => {
     const session = await startSession();
 
@@ -277,10 +343,7 @@ export const checkoutCart = async (
                 .lean();
 
             if (products.length !== productIds.length) {
-                throw new AppError(
-                    "One or more cart products no longer exist",
-                    400,
-                );
+                throw new AppError("One or more cart products no longer exist", 400);
             }
 
             await assertCatalogReferencesAreActive(products, session);
@@ -289,7 +352,7 @@ export const checkoutCart = async (
 
             const subtotal = snapshots.reduce(
                 (sum, item) => sum + item.lineTotal,
-                0,
+                0
             );
             const shippingFee = 0;
             const total = subtotal + shippingFee;
@@ -309,7 +372,7 @@ export const checkoutCart = async (
                         status: "PENDING",
                     },
                 ],
-                { session },
+                { session }
             );
 
             if (!order) {
@@ -321,7 +384,7 @@ export const checkoutCart = async (
                     _id: cart._id,
                     userId: cart.userId,
                 },
-                { session },
+                { session }
             );
 
             if (deleteResult.deletedCount !== 1) {
@@ -334,7 +397,7 @@ export const checkoutCart = async (
         if (!createdOrder) {
             throw new AppError(
                 "Checkout transaction did not create an order",
-                500,
+                500
             );
         }
 
@@ -348,4 +411,149 @@ export const checkoutCart = async (
     } finally {
         await session.endSession();
     }
+};
+
+// --- Customer Order Services (Phase 12) ---
+export const listCustomerOrders = async (
+    userId: string,
+    query: OrderListQuery
+): Promise<OrderListResult> => {
+    const page = Number(query.page ?? "1");
+    const limit = Number(query.limit ?? "10");
+
+    const filter: Record<string, unknown> = {
+        userId: new Types.ObjectId(userId),
+    };
+
+    if (query.status) {
+        filter.status = query.status;
+    }
+
+    return paginateOrders(filter, page, limit);
+};
+
+export const getCustomerOrderById = async (
+    userId: string,
+    orderId: string
+): Promise<CheckoutOrderResponse> => {
+    const order = await OrderModel.findOne({
+        _id: orderId,
+        userId: new Types.ObjectId(userId),
+    });
+
+    if (!order) {
+        throw new AppError("Order not found", 404);
+    }
+
+    return mapOrderResponse(order);
+};
+
+// --- Admin Order Services (Phase 12) ---
+export const listAdminOrders = async (
+    query: AdminOrderListQuery
+): Promise<OrderListResult> => {
+    const page = Number(query.page ?? "1");
+    const limit = Number(query.limit ?? "10");
+
+    const filter: Record<string, unknown> = {};
+
+    if (query.status) {
+        filter.status = query.status;
+    }
+
+    if (query.userId) {
+        filter.userId = new Types.ObjectId(query.userId);
+    }
+
+    return paginateOrders(filter, page, limit);
+};
+
+export const getAdminOrderById = async (
+    orderId: string
+): Promise<CheckoutOrderResponse> => {
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+        throw new AppError("Order not found", 404);
+    }
+
+    return mapOrderResponse(order);
+};
+
+const cancelOrderWithStockRestore = async (
+    orderId: string
+): Promise<CheckoutOrderResponse> => {
+    const session = await startSession();
+    try {
+        let cancelledOrder: OrderDocument | null = null;
+
+        await session.withTransaction(async () => {
+            const order = await OrderModel.findById(orderId).session(session);
+
+            if (!order) {
+                throw new AppError("Order not found", 404);
+            }
+
+            if (!isValidOrderStatusTransition(order.status, "CANCELLED")) {
+                throw new AppError(
+                    `Cannot transition order from ${order.status} to CANCELLED`,
+                    400
+                );
+            }
+
+            for (const item of order.items) {
+                await ProductModel.updateOne(
+                    {
+                        _id: item.productId,
+                        "variants._id": item.variantId,
+                    },
+                    {
+                        $inc: {
+                            "variants.$.stock": item.quantity,
+                        },
+                    },
+                    { session }
+                );
+            }
+
+            order.status = "CANCELLED";
+            await order.save({ session });
+            cancelledOrder = order;
+        });
+
+        if (!cancelledOrder) {
+            throw new AppError("Unable to cancel order", 500);
+        }
+
+        return mapOrderResponse(cancelledOrder);
+    } finally {
+        await session.endSession();
+    }
+};
+
+export const updateOrderStatus = async (
+    orderId: string,
+    nextStatus: OrderStatus
+): Promise<CheckoutOrderResponse> => {
+    if (nextStatus === "CANCELLED") {
+        return cancelOrderWithStockRestore(orderId);
+    }
+
+    const order = await OrderModel.findById(orderId);
+
+    if (!order) {
+        throw new AppError("Order not found", 404);
+    }
+
+    if (!isValidOrderStatusTransition(order.status, nextStatus)) {
+        throw new AppError(
+            `Cannot transition order from ${order.status} to ${nextStatus}`,
+            400
+        );
+    }
+
+    order.status = nextStatus;
+    await order.save();
+
+    return mapOrderResponse(order);
 };

@@ -7,7 +7,7 @@ import { authRouter } from "./routes/auth.route";
 import { adminBrandRouter, brandRouter } from "./routes/brand.route";
 import { cartRouter } from "./routes/cart.route";
 import { adminCategoryRouter, categoryRouter } from "./routes/category.route";
-import { orderRouter } from "./routes/order.route";
+import { adminOrderRouter, orderRouter } from "./routes/order.route";
 import {
     adminProductRouter,
     productRouter,
@@ -24,17 +24,22 @@ app.get("/api/health", (_request, response) => {
     });
 });
 
+// Authentication Routes
 app.use("/api/auth", authRouter);
 
+// Customer Routes
 app.use("/api/brands", brandRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 
+// Admin Routes
 app.use("/api/admin/brands", adminBrandRouter);
 app.use("/api/admin/categories", adminCategoryRouter);
 app.use("/api/admin/products", adminProductRouter);
+app.use("/api/admin/orders", adminOrderRouter);
 
+// Error Handling Middlewares
 app.use(notFoundHandler);
 app.use(errorHandler);
