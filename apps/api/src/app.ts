@@ -14,6 +14,7 @@ import {
 } from "./routes/product.route";
 
 import { adminCouponRouter } from "./routes/coupon.routes";
+import { reviewRouter } from "./routes/review.route";
 
 export const app = express();
 
@@ -33,6 +34,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/brands", brandRouter);
 app.use("/api/categories", categoryRouter);
 app.use("/api/products", productRouter);
+app.use("/api/products/:productId/reviews", reviewRouter);
 app.use("/api/cart", cartRouter);
 app.use("/api/orders", orderRouter);
 

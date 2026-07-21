@@ -25,6 +25,8 @@ export interface Product {
     categoryId: Types.ObjectId;
     variants: ProductVariant[];
     isActive: boolean;
+    ratingAverage: number;
+    ratingCount: number;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -138,6 +140,19 @@ const productSchema = new Schema<Product, ProductModel>(
             type: Boolean,
             default: true,
             index: true,
+        },
+        ratingAverage: {
+            type: Number,
+            required: true,
+            min: 0,
+            max: 5,
+            default: 0,
+        },
+        ratingCount: {
+            type: Number,
+            required: true,
+            min: 0,
+            default: 0,
         },
     },
     {
