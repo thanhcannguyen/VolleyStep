@@ -1,6 +1,7 @@
 
 import { z } from "zod";
 import { ORDER_STATUSES } from "../models/order.model";
+import { couponCodeSchema } from "./coupon.schema";
 
 // --- Helper Functions & Sub-schemas hiện có ---
 const requiredText = (fieldName: string, maximumLength: number) =>
@@ -61,6 +62,7 @@ export const checkoutSchema = z.object({
     body: z
         .object({
             shippingAddress: shippingAddressSchema,
+            couponCode: couponCodeSchema.optional(),
         })
         .strict(),
 });

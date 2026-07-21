@@ -50,6 +50,8 @@ export interface Order {
     shippingAddress: ShippingAddressSnapshot;
     subtotal: number;
     shippingFee: number;
+    couponCode: string | null;
+    discountAmount: number;
     total: number;
     status: OrderStatus;
     createdAt: Date;
@@ -209,6 +211,19 @@ const orderSchema = new Schema<Order, OrderModel>(
             validate: integerMoneyValidator,
         },
         shippingFee: {
+            type: Number,
+            required: true,
+            min: 0,
+            default: 0,
+            validate: integerMoneyValidator,
+        },
+        couponCode: {
+            type: String,
+            default: null,
+            trim: true,
+            uppercase: true,
+        },
+        discountAmount: {
             type: Number,
             required: true,
             min: 0,

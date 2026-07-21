@@ -13,6 +13,8 @@ import {
     productRouter,
 } from "./routes/product.route";
 
+import { adminCouponRouter } from "./routes/coupon.routes";
+
 export const app = express();
 
 app.use(express.json());
@@ -39,6 +41,7 @@ app.use("/api/admin/brands", adminBrandRouter);
 app.use("/api/admin/categories", adminCategoryRouter);
 app.use("/api/admin/products", adminProductRouter);
 app.use("/api/admin/orders", adminOrderRouter);
+app.use("/api/admin/coupons", adminCouponRouter);
 
 // Error Handling Middlewares
 app.use(notFoundHandler);

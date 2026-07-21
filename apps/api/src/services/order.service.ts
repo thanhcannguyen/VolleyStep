@@ -24,6 +24,8 @@ import { AppError } from "../utils/app-error";
 import { isDuplicateKeyError } from "../utils/duplicate-key";
 import { isValidOrderStatusTransition } from "../utils/order-status";
 
+import { applyCouponInTransaction } from "./coupon.service";
+
 interface ProductWithVariant {
     product: Product & { _id: Types.ObjectId };
     variant: ProductVariant;
@@ -58,6 +60,8 @@ export interface CheckoutOrderResponse {
     };
     subtotal: number;
     shippingFee: number;
+    couponCode: string | null;
+    discountAmount: number;
     total: number;
     createdAt: Date;
 }
@@ -135,6 +139,8 @@ const mapOrderResponse = (order: OrderDocument): CheckoutOrderResponse => ({
     },
     subtotal: order.subtotal,
     shippingFee: order.shippingFee,
+    couponCode: order.couponCode,
+    discountAmount: order.discountAmount,
     total: order.total,
     createdAt: order.createdAt,
 });
@@ -354,8 +360,22 @@ export const checkoutCart = async (
                 (sum, item) => sum + item.lineTotal,
                 0
             );
+            let discountAmount = 0;
+            let appliedCouponCode: string | null = null;
+
+            if (input.couponCode) {
+                const applied = await applyCouponInTransaction(
+                    input.couponCode,
+                    subtotal,
+                    session,
+                );
+
+                discountAmount = applied.discountAmount;
+                appliedCouponCode = applied.code;
+            }
+
             const shippingFee = 0;
-            const total = subtotal + shippingFee;
+            const total = subtotal - discountAmount + shippingFee;
 
             await decrementStockAtomically(snapshots, session);
 
@@ -368,6 +388,8 @@ export const checkoutCart = async (
                         shippingAddress: input.shippingAddress,
                         subtotal,
                         shippingFee,
+                        couponCode: appliedCouponCode,
+                        discountAmount,
                         total,
                         status: "PENDING",
                     },
