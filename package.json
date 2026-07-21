@@ -7,7 +7,8 @@
         "dev:api": "pnpm --filter @volleystep/api dev",
         "build:api": "pnpm --filter @volleystep/api build",
         "start:api": "pnpm --filter @volleystep/api start",
-        "typecheck": "pnpm --filter @volleystep/api typecheck"
+        "typecheck": "pnpm --filter @volleystep/api typecheck",
+        "seed:api": "pnpm --filter @volleystep/api seed"
     },
     "packageManager": "pnpm@11.13.1",
     "engines": {
