@@ -1,6 +1,5 @@
 
 import express from "express";
-
 import cors from "cors";
 import { env } from "./config/env";
 
@@ -11,11 +10,7 @@ import { adminBrandRouter, brandRouter } from "./routes/brand.route";
 import { cartRouter } from "./routes/cart.route";
 import { adminCategoryRouter, categoryRouter } from "./routes/category.route";
 import { adminOrderRouter, orderRouter } from "./routes/order.route";
-import {
-    adminProductRouter,
-    productRouter,
-} from "./routes/product.route";
-
+import { adminProductRouter, productRouter } from "./routes/product.route";
 import { adminCouponRouter } from "./routes/coupon.routes";
 import { reviewRouter } from "./routes/review.route";
 
@@ -30,8 +25,7 @@ app.use(
 
 app.use(express.json());
 
-app.use(express.json());
-
+// Endpoint kiểm tra trạng thái API
 app.get("/api/health", (_request, response) => {
     response.status(200).json({
         success: true,
@@ -57,6 +51,6 @@ app.use("/api/admin/products", adminProductRouter);
 app.use("/api/admin/orders", adminOrderRouter);
 app.use("/api/admin/coupons", adminCouponRouter);
 
-// Error Handling Middlewares
+// Error Handling Middlewares (luôn đặt ở cuối)
 app.use(notFoundHandler);
 app.use(errorHandler);

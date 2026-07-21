@@ -4,10 +4,15 @@
     "private": true,
     "description": "A fullstack ecommerce platform for volleyball shoes",
     "scripts": {
+        "dev": "pnpm --parallel --filter @volleystep/api --filter @volleystep/web dev",
         "dev:api": "pnpm --filter @volleystep/api dev",
+        "dev:web": "pnpm --filter @volleystep/web dev",
+        "build": "pnpm build:api && pnpm build:web",
         "build:api": "pnpm --filter @volleystep/api build",
+        "build:web": "pnpm --filter @volleystep/web build",
+        "typecheck": "pnpm --recursive typecheck",
+        "lint:web": "pnpm --filter @volleystep/web lint",
         "start:api": "pnpm --filter @volleystep/api start",
-        "typecheck": "pnpm --filter @volleystep/api typecheck",
         "seed:api": "pnpm --filter @volleystep/api seed"
     },
     "packageManager": "pnpm@11.13.1",
