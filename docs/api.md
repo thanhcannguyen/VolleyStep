@@ -53,3 +53,22 @@ PATCH  /api/admin/coupons/:id    Admin
 ## Reviews
 POST   /api/products/:productId/reviews   Customer (đã DELIVERED)
 GET    /api/products/:productId/reviews   Public
+
+## Get admin products
+
+GET /api/admin/products
+
+Authorization: Bearer <accessToken>
+
+### Query parameters
+
+- page: positive integer, default 1
+- limit: positive integer, default 20, maximum 100
+- search: product name, slug or SKU
+- brandId: MongoDB ObjectId
+- categoryId: MongoDB ObjectId
+- isActive: true | false
+
+### Example
+
+GET /api/admin/products?page=1&limit=20&search=mizuno&isActive=true

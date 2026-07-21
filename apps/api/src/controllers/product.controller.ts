@@ -2,6 +2,7 @@
 import type { RequestHandler } from "express";
 
 import type {
+    AdminProductListQuery,
     CreateProductInput,
     CreateProductVariantInput,
     ProductListQuery,
@@ -15,6 +16,7 @@ import {
     deleteProductVariant,
     getAdminProductById,
     getPublicProductBySlug,
+    listAdminProducts,
     listPublicProducts,
     updateProduct,
     updateProductVariant,
@@ -159,6 +161,21 @@ export const getProductBySlugHandler: RequestHandler<
 // ==========================================
 // ADMIN PRODUCT CONTROLLERS
 // ==========================================
+
+export const listAdminProductsHandler: RequestHandler<
+    Record<string, string>,
+    unknown,
+    unknown,
+    AdminProductListQuery
+> = async (request, response) => {
+    const result = await listAdminProducts(request.query);
+
+    response.status(200).json({
+        success: true,
+        message: "Admin products retrieved successfully",
+        data: result,
+    });
+};
 
 export const createProductHandler: RequestHandler<
     Record<string, string>,

@@ -8,6 +8,7 @@ import {
     deleteProductVariantHandler,
     getAdminProductHandler,
     getProductBySlugHandler,
+    listAdminProductsHandler,
     listProductsHandler,
     updateProductHandler,
     updateProductVariantHandler,
@@ -16,6 +17,7 @@ import { authenticate } from "../middlewares/authenticate.middleware";
 import { authorize } from "../middlewares/authorize.middleware";
 import { validate } from "../middlewares/validate.middleware";
 import {
+    adminProductListQuerySchema,
     createProductSchema,
     createProductVariantSchema,
     deleteProductVariantSchema,
@@ -56,6 +58,12 @@ adminProductRouter.post(
     "/",
     validate(createProductSchema),
     createProductHandler,
+);
+
+adminProductRouter.get(
+    "/",
+    validate(adminProductListQuerySchema),
+    listAdminProductsHandler,
 );
 
 adminProductRouter.get(

@@ -6,6 +6,7 @@ import { BrandModel } from "../models/brand.model";
 import { CategoryModel } from "../models/category.model";
 import { ProductModel, type ProductDocument } from "../models/product.model";
 import type {
+    AdminProductListQuery,
     CreateProductInput,
     CreateProductVariantInput,
     ProductListQuery,
@@ -15,6 +16,46 @@ import type {
 import { AppError } from "../utils/app-error";
 import { isDuplicateKeyError } from "../utils/duplicate-key";
 import { createSlug } from "../utils/slug";
+
+// ==========================================
+// INTERFACES FOR ADMIN PRODUCT LIST
+// ==========================================
+
+export interface AdminProductListResult {
+    products: Array<{
+        id: string;
+        name: string;
+        slug: string;
+        brand: {
+            id: string;
+            name: string;
+            slug: string;
+            isActive: boolean;
+        };
+        category: {
+            id: string;
+            name: string;
+            slug: string;
+            isActive: boolean;
+        };
+        minPrice: number;
+        maxPrice: number;
+        totalStock: number;
+        variantCount: number;
+        thumbnail: string | null;
+        isActive: boolean;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    pagination: {
+        page: number;
+        limit: number;
+        totalItems: number;
+        totalPages: number;
+        hasNextPage: boolean;
+        hasPreviousPage: boolean;
+    };
+}
 
 // ==========================================
 // INTERFACES FOR PUBLIC PRODUCT CATALOG
@@ -158,6 +199,131 @@ const handleProductDuplicateError = (error: unknown): never => {
 // ==========================================
 // ADMIN PRODUCT SERVICES
 // ==========================================
+
+export const listAdminProducts = async (
+    query: AdminProductListQuery,
+): Promise<AdminProductListResult> => {
+    const page = Number(query.page ?? "1");
+    const limit = Number(query.limit ?? "20");
+    const skip = (page - 1) * limit;
+
+    const filter: Record<string, unknown> = {};
+
+    if (query.search) {
+        filter.$or = [
+            {
+                name: {
+                    $regex: escapeRegularExpression(query.search.trim()),
+                    $options: "i",
+                },
+            },
+            {
+                slug: {
+                    $regex: escapeRegularExpression(query.search.trim()),
+                    $options: "i",
+                },
+            },
+            {
+                "variants.sku": {
+                    $regex: escapeRegularExpression(query.search.trim()),
+                    $options: "i",
+                },
+            },
+        ];
+    }
+
+    if (query.brandId) {
+        filter.brandId = new Types.ObjectId(query.brandId);
+    }
+
+    if (query.categoryId) {
+        filter.categoryId = new Types.ObjectId(query.categoryId);
+    }
+
+    if (query.isActive !== undefined) {
+        filter.isActive = query.isActive === "true";
+    }
+
+    const [products, totalItems] = await Promise.all([
+        ProductModel.find(filter)
+            .populate({
+                path: "brandId",
+                select: "name slug isActive",
+            })
+            .populate({
+                path: "categoryId",
+                select: "name slug isActive",
+            })
+            .sort({
+                createdAt: -1,
+                _id: -1,
+            })
+            .skip(skip)
+            .limit(limit),
+        ProductModel.countDocuments(filter),
+    ]);
+
+    const totalPages =
+        totalItems === 0 ? 0 : Math.ceil(totalItems / limit);
+
+    return {
+        products: products.map((product) => {
+            const brand = product.brandId as unknown as {
+                _id: Types.ObjectId;
+                name: string;
+                slug: string;
+                isActive: boolean;
+            };
+
+            const category = product.categoryId as unknown as {
+                _id: Types.ObjectId;
+                name: string;
+                slug: string;
+                isActive: boolean;
+            };
+
+            const prices = product.variants.map((variant) => variant.price);
+            const totalStock = product.variants.reduce(
+                (total, variant) => total + variant.stock,
+                0,
+            );
+
+            return {
+                id: product.id,
+                name: product.name,
+                slug: product.slug,
+                brand: {
+                    id: brand._id.toString(),
+                    name: brand.name,
+                    slug: brand.slug,
+                    isActive: brand.isActive,
+                },
+                category: {
+                    id: category._id.toString(),
+                    name: category.name,
+                    slug: category.slug,
+                    isActive: category.isActive,
+                },
+                minPrice: Math.min(...prices),
+                maxPrice: Math.max(...prices),
+                totalStock,
+                variantCount: product.variants.length,
+                thumbnail: product.variants[0]?.images[0] ?? null,
+                isActive: product.isActive,
+                createdAt: product.createdAt,
+                updatedAt: product.updatedAt,
+            };
+        }),
+        pagination: {
+            page,
+            limit,
+            totalItems,
+            totalPages,
+            hasNextPage: page < totalPages,
+            hasPreviousPage: totalPages > 0 && page > 1,
+        },
+    };
+};
 
 export const createProduct = async (
     input: CreateProductInput,

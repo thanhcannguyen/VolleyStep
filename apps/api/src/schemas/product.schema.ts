@@ -281,6 +281,35 @@ export const publicProductSlugSchema = z.object({
     }),
 });
 
+export const adminProductListQuerySchema = z.object({
+    query: z
+        .object({
+            page: positiveIntegerQuerySchema.optional(),
+
+            limit: positiveIntegerQuerySchema
+                .refine((value) => Number(value) <= 100, {
+                    message: "Limit must be less than or equal to 100",
+                })
+                .optional(),
+
+            search: z
+                .string()
+                .trim()
+                .min(1, "Search must not be empty")
+                .max(100, "Search must contain at most 100 characters")
+                .optional(),
+
+            brandId: mongoObjectIdSchema.optional(),
+
+            categoryId: mongoObjectIdSchema.optional(),
+
+            isActive: z
+                .enum(["true", "false"])
+                .optional(),
+        })
+        .strict(),
+});
+
 export type CreateProductInput =
     z.infer<typeof createProductSchema>["body"];
 
@@ -295,3 +324,6 @@ export type UpdateProductVariantInput =
 
 export type ProductListQuery =
     z.infer<typeof productListQuerySchema>["query"];
+
+export type AdminProductListQuery =
+    z.infer<typeof adminProductListQuerySchema>["query"];

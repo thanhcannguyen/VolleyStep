@@ -1,6 +1,9 @@
 
 import express from "express";
 
+import cors from "cors";
+import { env } from "./config/env";
+
 import { errorHandler } from "./middlewares/error-handler.middleware";
 import { notFoundHandler } from "./middlewares/not-found.middleware";
 import { authRouter } from "./routes/auth.route";
@@ -17,6 +20,15 @@ import { adminCouponRouter } from "./routes/coupon.routes";
 import { reviewRouter } from "./routes/review.route";
 
 export const app = express();
+
+app.use(
+    cors({
+        origin: env.WEB_URL,
+        credentials: true,
+    }),
+);
+
+app.use(express.json());
 
 app.use(express.json());
 

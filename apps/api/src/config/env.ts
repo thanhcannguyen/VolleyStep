@@ -33,6 +33,12 @@ const envSchema = z.object({
         .max(65535)
         .default(5000),
 
+    // ⬇️ Thêm WEB_URL vào đây
+    WEB_URL: z
+        .string()
+        .url("WEB_URL must be a valid URL")
+        .default("http://localhost:5173"),
+
     MONGODB_URI: mongoUriSchema,
 
     JWT_ACCESS_SECRET: z
