@@ -1,7 +1,7 @@
 
-import { ErrorMessage } from "@/components/common/ErrorMessage";
-import { LoadingScreen } from "@/components/common/LoadingScreen";
-import { ApiError } from "@/lib/api/api-error";
+import { ErrorMessage } from "@/components/ErrorMessage";
+import { LoadingScreen } from "@/components/LoadingScreen";
+import { ApiError } from "@/api/api-error";
 
 import { useHealthCheck } from "../hooks/useHealthCheck";
 

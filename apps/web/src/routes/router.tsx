@@ -1,8 +1,8 @@
 
 import { createBrowserRouter, Navigate } from "react-router-dom";
 
-import { NotFound } from "@/components/common/NotFound";
-import { HealthPage } from "@/features/health/pages/HealthPage";
+import { NotFound } from "@/components/NotFound";
+import { HealthPage } from "@/pages/HealthPage";
 
 import { ROUTE_PATHS } from "./route-paths";
 

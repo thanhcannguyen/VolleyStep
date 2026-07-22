@@ -1,7 +1,7 @@
 
 import { Link } from "react-router-dom";
 
-import { ROUTE_PATHS } from "@/app/route-paths";
+import { ROUTE_PATHS } from "@/routes/route-paths";
 
 export function NotFound() {
     return (
